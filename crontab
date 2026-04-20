@@ -1,0 +1,17 @@
+# Setup Sniper — Cron Schedule (all times UTC)
+# EDT = UTC-4. Adjust +1hr in winter (EST = UTC-5).
+SHELL=/bin/bash
+
+# Nightly scan: 4:35 PM ET = 20:35 UTC
+35 20 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py nightly >> /app/logs/cron.log 2>&1
+
+# Regime classifier: 7:45 AM ET = 11:45 UTC (before 8:00 morning check)
+45 11 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py regime >> /app/logs/cron.log 2>&1
+
+# Morning check pass 1: 8:00 AM ET = 12:00 UTC
+0 12 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py morning >> /app/logs/cron.log 2>&1
+
+# Morning check pass 2: 8:45 AM ET = 12:45 UTC (catches late PM data)
+45 12 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py morning >> /app/logs/cron.log 2>&1
+
+# Required trailing newline

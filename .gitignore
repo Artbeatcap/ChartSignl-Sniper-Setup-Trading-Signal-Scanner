@@ -1,0 +1,25 @@
+# Runtime / local data
+data/
+logs/
+*.log
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Secrets
+.env
+
+# Build / dist artifacts
+*.tar
+
+# AI tool scratch workspace (not project source)
+mnt/
+
+# IDE / editor
+.idea/
+.vscode/
+.cursor/
+
+# Python virtual envs
+.venv/
+venv/

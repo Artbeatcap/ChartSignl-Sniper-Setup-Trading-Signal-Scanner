@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  chartsignl-api:
+    build:
+      context: ../../..
+      dockerfile: apps/backend/Dockerfile
+    container_name: chartsignl-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SOCIAL_API_SECRET=${SOCIAL_API_SECRET:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8081,http://localhost:19006,http://localhost:3000,https://app.chartsignl.com,https://chartsignl.com,https://www.chartsignl.com}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID}
+      - STRIPE_PRICE_ID_TEST=${STRIPE_PRICE_ID_TEST:-}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY:-}
+      - CRON_SECRET=${CRON_SECRET:-}
+      - GROWTHHUB_WEBHOOK_URL=${GROWTHHUB_WEBHOOK_URL:-}
+      - GROWTHHUB_WEBHOOK_ACTIVATION=${GROWTHHUB_WEBHOOK_ACTIVATION:-}
+      - GROWTHHUB_WEBHOOK_PAYWALL=${GROWTHHUB_WEBHOOK_PAYWALL:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - chartsignl
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=n8n.chartsignl.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.chartsignl.com/
+      - GENERIC_TIMEZONE=America/New_York
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - N8N_USER_MANAGEMENT_JWT_SECRET=${N8N_USER_MANAGEMENT_JWT_SECRET}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - chartsignl
+
+networks:
+  chartsignl:
+    driver: bridge
+
+volumes:
+  n8n_data:

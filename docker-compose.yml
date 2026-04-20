@@ -1,0 +1,35 @@
+# Setup Sniper — Docker Compose
+# Run from project root: cd /root/setup-sniper && docker compose up -d --build
+# After rebuild, entrypoint installs crontab from /app/deploy/crontab (no manual docker exec).
+
+services:
+  setup-sniper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: setup-sniper
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
+      - LOG_DIR=/app/logs
+    volumes:
+      # Persist watchlist + alert logs across container restarts
+      - sniper-data:/app/data
+      - sniper-logs:/app/logs
+    healthcheck:
+      # Functional sanity check: imports + config/env load
+      test: ["CMD", "python", "-c", "from config import ScannerConfig; ScannerConfig(); print('ok')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  sniper-data:
+  sniper-logs:
