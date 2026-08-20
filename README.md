@@ -17,9 +17,13 @@ Two automated scans that find **yesterday's 80%+ runners** and evaluate them in 
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Set your API key
+# 2. Set your API key (never commit .env)
 cp .env.template .env
-# Edit .env → add your Polygon.io API key
+# Edit .env → add MASSIVE_API_KEY from https://massive.com/ or polygon.io
+
+# Cloud Agents: add a Runtime Secret named MASSIVE_API_KEY in
+# https://cursor.com/dashboard/cloud-agents (Secrets tab), then start a new agent.
+# ChartSignl MCP credentials are separate and do not fill this env var.
 
 # 3. Source your env (or use python-dotenv)
 export MASSIVE_API_KEY=your_key

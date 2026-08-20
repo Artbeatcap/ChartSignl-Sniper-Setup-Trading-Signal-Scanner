@@ -1,0 +1,4 @@
+{
+  "install": "pip install --break-system-packages -r requirements.txt",
+  "start": "python3 scripts/materialize_env.py"
+}
