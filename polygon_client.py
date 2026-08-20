@@ -3,8 +3,9 @@ Polygon.io API Client
 Handles: OHLCV bars, snapshots, gainers, premarket data.
 Rate-limited and fault-tolerant.
 """
-import time
 import logging
+import re
+import time
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -13,6 +14,13 @@ import requests
 from config import APIConfig
 
 logger = logging.getLogger(__name__)
+
+_API_KEY_IN_URL = re.compile(r"(apiKey=)[^&\s]+", re.IGNORECASE)
+
+
+def _redact(message: object) -> str:
+    """Strip query-string API keys from log lines (requests includes them in errors)."""
+    return _API_KEY_IN_URL.sub(r"\1[REDACTED]", str(message))
 
 
 class PolygonClient:
@@ -48,10 +56,10 @@ class PolygonClient:
                 logger.warning("Rate limited by Polygon. Backing off 30s...")
                 time.sleep(30)
                 return self._get(endpoint, params)  # Retry once
-            logger.error(f"HTTP {resp.status_code} for {endpoint}: {e}")
+            logger.error(f"HTTP {resp.status_code} for {endpoint}: {_redact(e)}")
             raise
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request failed for {endpoint}: {e}")
+            logger.error(f"Request failed for {endpoint}: {_redact(e)}")
             raise
 
     # ─── Market Snapshot Endpoints ──────────────────────────────────────
@@ -75,7 +83,7 @@ class PolygonClient:
                     resp.raise_for_status()
                     data = resp.json()
                 except Exception as e:
-                    logger.error(f"Snapshot pagination failed: {e}")
+                    logger.error(f"Snapshot pagination failed: {_redact(e)}")
                     raise
             else:
                 data = self._get(endpoint)
