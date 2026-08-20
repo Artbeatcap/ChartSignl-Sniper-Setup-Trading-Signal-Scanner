@@ -44,6 +44,7 @@ class SetupId(Enum):
     ORL_VWAP_9EMA = 8
     DEAD_CAT_BOUNCE = 9
     BLACK_SWAN_REVERSAL = 10
+    DAY1_CATALYST_GAP_LONG = 11
 
 
 @dataclass

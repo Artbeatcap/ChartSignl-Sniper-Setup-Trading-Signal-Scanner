@@ -12,6 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # App code
 COPY *.py ./
+COPY catalyst_events.json ./
+COPY CATALYST_RERATING.md ./
 
 # Schedule: deploy/crontab. Entrypoint runs `crontab /app/deploy/crontab` on start (survives rebuild).
 RUN mkdir -p /app/deploy

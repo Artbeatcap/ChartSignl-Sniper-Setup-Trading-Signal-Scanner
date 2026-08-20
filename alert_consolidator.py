@@ -23,6 +23,7 @@ _RB = {
     SetupId.ORL_VWAP_9EMA: None,
     SetupId.DEAD_CAT_BOUNCE: frozenset({MarketRegime.BEAR, MarketRegime.STRONG_BEAR, MarketRegime.PANIC}),
     SetupId.BLACK_SWAN_REVERSAL: frozenset({MarketRegime.PANIC, MarketRegime.STRONG_BEAR}),
+    SetupId.DAY1_CATALYST_GAP_LONG: None,
 }
 _BEARS = frozenset({MarketRegime.BEAR, MarketRegime.STRONG_BEAR, MarketRegime.PANIC})
 
@@ -48,6 +49,10 @@ SETUP_NAME_TO_ID: dict[str, SetupId] = {
     "BLACK SWAN REVERSAL":                  SetupId.BLACK_SWAN_REVERSAL,
     "BLACK SWAN REVERSAL — LOAD THE BOAT":  SetupId.BLACK_SWAN_REVERSAL,
     "BLACK SWAN PANIC BUY":                 SetupId.BLACK_SWAN_REVERSAL,
+    "DAY-1 CATALYST GAP LONG":              SetupId.DAY1_CATALYST_GAP_LONG,
+    "SETUP 11: DAY-1 CATALYST GAP LONG":    SetupId.DAY1_CATALYST_GAP_LONG,
+    "CATALYST RE-RATING":                   SetupId.DAY1_CATALYST_GAP_LONG,
+    "SETUP 11: CATALYST RE-RATING WATCH — DO NOT FADE": SetupId.DAY1_CATALYST_GAP_LONG,
 }
 
 
@@ -81,6 +86,9 @@ def _parse_setup_id(setup: str) -> Optional[SetupId]:
         (("VIX CRASH",),        SetupId.VIX_CRASH_REVERSAL),
         (("CRASH REVERSAL",),   SetupId.VIX_CRASH_REVERSAL),
         (("BLACK SWAN",),       SetupId.BLACK_SWAN_REVERSAL),
+        (("SETUP 11",),         SetupId.DAY1_CATALYST_GAP_LONG),
+        (("CATALYST RE-RATING",), SetupId.DAY1_CATALYST_GAP_LONG),
+        (("DAY-1 CATALYST",),   SetupId.DAY1_CATALYST_GAP_LONG),
         (("DEAD CAT",),         SetupId.DEAD_CAT_BOUNCE),
     ):
         if all(k in u for k in keys):
