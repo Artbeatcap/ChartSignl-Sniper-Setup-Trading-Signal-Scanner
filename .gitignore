@@ -18,7 +18,10 @@ mnt/
 # IDE / editor
 .idea/
 .vscode/
-.cursor/
+
+# Cursor local state — keep committed Cloud Agent config
+.cursor/*
+!.cursor/environment.json
 
 # Python virtual envs
 .venv/

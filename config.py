@@ -98,8 +98,12 @@ class APIConfig:
         self.api_key = self.api_key or os.getenv("MASSIVE_API_KEY", "")
         if not self.api_key:
             raise ValueError(
-                "MASSIVE_API_KEY not set. Export it or add to .env:\n"
-                "  export MASSIVE_API_KEY=your_key_here"
+                "MASSIVE_API_KEY not set. Add it as a Cursor Cloud Runtime Secret "
+                "named MASSIVE_API_KEY (https://cursor.com/dashboard/cloud-agents), "
+                "or put it in a gitignored .env:\n"
+                "  cp .env.template .env\n"
+                "  # then set MASSIVE_API_KEY=...\n"
+                "ChartSignl MCP credentials cannot be copied into this process."
             )
 
 
