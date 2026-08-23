@@ -82,7 +82,8 @@ function Invoke-Ssh {
         [string] $Stdin
     )
     $sshArgs = @(Get-SshArgs)
-    if ($Tty) { $sshArgs += "-t" }
+    # Windows OpenSSH often needs a forced TTY (-tt) for nano/vi.
+    if ($Tty) { $sshArgs += "-tt" }
     $sshArgs += @($Remote, $RemoteCmd)
     Write-Host "ssh $Remote <remote command>" -ForegroundColor DarkGray
     if ($DryRun) { return }
@@ -172,11 +173,17 @@ $StatusPy = $StatusPy.Replace("__ENV_FILE__", $EnvFile)
 Write-Host "Remote env: ${Remote}:${EnvFile}" -ForegroundColor Cyan
 
 if ($Editor) {
-    Write-Host "Opening nano on the server. Add APCA_API_KEY_ID and APCA_API_SECRET_KEY, save, exit." -ForegroundColor Yellow
-    Invoke-Ssh -RemoteCmd "nano $EnvFile" -Tty
+    Write-Host "Opening a remote editor on $EnvFile." -ForegroundColor Yellow
+    Write-Host "Add these two lines, then save and exit:" -ForegroundColor Yellow
+    Write-Host "  APCA_API_KEY_ID=your_key_id"
+    Write-Host "  APCA_API_SECRET_KEY=your_secret"
+    Write-Host "nano: Ctrl+O, Enter, Ctrl+X    vi: i to insert, Esc, :wq" -ForegroundColor DarkGray
+    $editCmd = "umask 077; touch '$EnvFile'; if command -v nano >/dev/null 2>&1; then nano '$EnvFile'; else vi '$EnvFile'; fi"
+    Invoke-Ssh -RemoteCmd $editCmd -Tty
     Write-Host "Recreating container so cron picks up .env..." -ForegroundColor Yellow
     Invoke-Ssh -RemoteCmd "cd $RemotePath && docker compose up -d --force-recreate setup-sniper"
     Invoke-Ssh -RemoteCmd "docker logs setup-sniper 2>&1 | grep -i alpaca || true"
+    Invoke-RemotePython -PythonSource $StatusPy
     return
 }
 
