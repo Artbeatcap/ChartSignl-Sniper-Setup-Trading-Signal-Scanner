@@ -4,20 +4,23 @@ Setup Sniper — Trading Scanner
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Usage:
-  python main.py nightly         # Run after market close (4:30 PM ET+)
-  python main.py morning         # Run premarket (8:00 - 9:15 AM ET)
-  python main.py morning-fresh   # 8:30 AM — premarket discovery (not on nightly list)
-  python main.py intraday        # Run during market hours (9:25 AM - 4:05 PM ET)
-  python main.py intraday --once # Single poll cycle (for testing)
-  python main.py regime         # Classify market regime → data/regime_today.json
-  python main.py full            # Run nightly + morning (for dev)
-  python main.py test            # Dry run to verify setup
+  python main.py nightly           # Run after market close (4:30 PM ET+)
+  python main.py morning           # Run premarket (8:00 - 9:15 AM ET)
+  python main.py morning-fresh     # 8:30 AM — premarket discovery (not on nightly list)
+  python main.py catalyst-backfill # Replay Alpaca news vs catalyst_events.json
+  python main.py intraday          # Run during market hours (9:25 AM - 4:05 PM ET)
+  python main.py intraday --once   # Single poll cycle (for testing)
+  python main.py regime            # Classify market regime → data/regime_today.json
+  python main.py full              # Run nightly + morning (for dev)
+  python main.py test              # Dry run to verify setup
 
 Environment:
-  MASSIVE_API_KEY=your_key       # Required
-  DISCORD_WEBHOOK_URL=url        # Optional
-  SLACK_WEBHOOK_URL=url          # Optional
-  INTRADAY_TICKERS=AAPL,TSLA    # Optional — extra tickers for Setup 8
+  MASSIVE_API_KEY=your_key         # Required
+  APCA_API_KEY_ID=your_key         # Optional — Alpaca news (Setup 11 gate)
+  APCA_API_SECRET_KEY=your_secret  # Optional — Alpaca news
+  DISCORD_WEBHOOK_URL=url          # Optional
+  SLACK_WEBHOOK_URL=url            # Optional
+  INTRADAY_TICKERS=AAPL,TSLA       # Optional — extra tickers for Setup 8
 """
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,6 +29,7 @@ import os
 import sys
 import logging
 from datetime import datetime
+from typing import Optional
 
 from config import ScannerConfig
 from polygon_client import PolygonClient
@@ -325,6 +329,57 @@ def run_morning_fresh(config: ScannerConfig) -> None:
     logger.info(f"8:30 AM scan complete — {len(movers)} new mover(s) sent")
 
 
+def _fmt_latency(sec: Optional[float]) -> str:
+    if sec is None:
+        return "—"
+    sign = "-" if sec < 0 else ""
+    sec = abs(sec)
+    if sec < 120:
+        return f"{sign}{sec:.0f}s"
+    return f"{sign}{sec / 60:.1f}m"
+
+
+def run_catalyst_backfill(config: ScannerConfig) -> None:
+    """Replay Alpaca REST news against catalyst_events.json. Requires paper keys."""
+    import asyncio
+
+    from catalyst_news import AlpacaNewsFeed, backfill_events, load_catalyst_events
+
+    if not config.alpaca_news.available:
+        logger.warning(
+            "catalyst-backfill skipped: set APCA_API_KEY_ID and APCA_API_SECRET_KEY "
+            "(free Alpaca paper key, no funding). Massive news cannot replay history."
+        )
+        return
+
+    events = load_catalyst_events()
+    if not events:
+        logger.error("catalyst_events.json missing or empty")
+        return
+
+    logger.info("Replaying Alpaca news for %d logged catalyst events…", len(events))
+    feed = AlpacaNewsFeed(config.alpaca_news.key_id, config.alpaca_news.secret_key)
+    rows = asyncio.run(
+        backfill_events(feed, events, lookback_hours=config.setup11.lookback_hours)
+    )
+
+    print("")
+    print(
+        f"{'Ticker':<8} {'Date':<12} {'Heads':>6} {'Conf':>5} "
+        f"{'Latency':>10} {'Clears 9:45':>12}  First confirming headline"
+    )
+    print("─" * 100)
+    for row in rows:
+        headline = (row.get("first_headline") or "—")[:56]
+        print(
+            f"{row['ticker']:<8} {row['event_date']:<12} {row['headlines']:>6} "
+            f"{row['confirming']:>5} {_fmt_latency(row.get('latency_sec')):>10} "
+            f"{'yes' if row.get('clears_0945') else 'no':>12}  {headline}"
+        )
+    print("")
+    logger.info("catalyst-backfill complete — %d event(s)", len(rows))
+
+
 def run_test(config: ScannerConfig):
     """Quick smoke test: verify API connectivity and config."""
     from polygon_client import PolygonClient
@@ -369,6 +424,38 @@ def run_test(config: ScannerConfig):
     atr_14 = atr(test_highs, test_lows, test_closes, 14)
     logger.info(f"     ✓ EMA-9 last value: {ema_9[-1]:.2f}")
 
+    logger.info("  5. Testing Alpaca news entitlement...")
+    if not config.alpaca_news.available:
+        logger.info(
+            "     — APCA_API_KEY_ID / APCA_API_SECRET_KEY not set "
+            "(news gate will emit unconfirmed)"
+        )
+    else:
+        import requests
+
+        try:
+            resp = requests.get(
+                "https://data.alpaca.markets/v1beta1/news",
+                params={"limit": 1},
+                headers={
+                    "APCA-API-KEY-ID": config.alpaca_news.key_id,
+                    "APCA-API-SECRET-KEY": config.alpaca_news.secret_key,
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                logger.info("     ✓ Alpaca news REST authorized")
+            elif resp.status_code in (401, 403):
+                logger.error(
+                    "     ✗ Alpaca rejected this key for news (HTTP %s). "
+                    "Verify paper/live entitlement on the Alpaca dashboard.",
+                    resp.status_code,
+                )
+            else:
+                logger.warning("     ? Alpaca news HTTP %s", resp.status_code)
+        except Exception as e:
+            logger.warning("     ? Alpaca news probe failed: %s", e)
+
     logger.info("\n  All tests passed. You're good to go.\n")
 
 
@@ -400,6 +487,8 @@ def main():
         engine = _make_consolidating_intraday_engine(config)
         single = "--once" in sys.argv
         engine.run(single_cycle=single)
+    elif command == "catalyst-backfill":
+        run_catalyst_backfill(config)
     elif command == "full":
         logger.info("Running full cycle (nightly → morning)...")
         run_nightly(config)
@@ -412,7 +501,8 @@ def main():
     else:
         print(f"Unknown command: {command}")
         print(
-            "Valid commands: nightly, morning, morning-fresh, intraday, regime, full, test"
+            "Valid commands: nightly, morning, morning-fresh, catalyst-backfill, "
+            "intraday, regime, full, test"
         )
         sys.exit(1)
 

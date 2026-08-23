@@ -1,0 +1,229 @@
+{
+  "last_updated": "2026-08-20",
+  "events_logged": 6,
+  "resolved": 5,
+  "open": 1,
+  "note": "Labeled dataset of sessions where price discovers a new equilibrium instead of mean-reverting. Immediate value is knowing when NOT to short. Setup 11 is research-only until 20+ events.",
+  "events": [
+    {
+      "ticker": "MRNA",
+      "event_date": "2026-08-19",
+      "catalyst": {
+        "type": "clinical_readout",
+        "headline": "Moderna and Merck announce Phase 3 topline results for mRNA cancer vaccine that met the primary endpoint",
+        "time_et": "06:45",
+        "scheduled": false,
+        "permanence": true
+      },
+      "tape": {
+        "prev_close": 62.95,
+        "open": 116.02,
+        "high": 176.66,
+        "low": 114.46,
+        "close": 174.38,
+        "volume": 371000000,
+        "avg_vol_20d": 10000000,
+        "entry_0930": 116.02,
+        "entry_0945": 129.47,
+        "daily_9ema": 61.76
+      },
+      "metrics": {
+        "gap_pct": 84.3,
+        "day_pct": 177.0,
+        "close_in_range_pct": 96.0,
+        "rvol": 37.1,
+        "atr_multiple": 31.0,
+        "x_daily_9ema": 2.82
+      },
+      "follow_up": {
+        "t5_pct": null,
+        "t20_pct": null,
+        "max_dd_pct": null,
+        "gap_filled_on_day": null,
+        "event_low_broken_on_day": null
+      },
+      "classification": "unresolved"
+    },
+    {
+      "ticker": "NVDA",
+      "event_date": "2023-05-25",
+      "catalyst": {
+        "type": "guidance_shock",
+        "headline": "NVIDIA raises full-year guidance on AI datacenter demand",
+        "time_et": "16:20",
+        "scheduled": true,
+        "permanence": true
+      },
+      "tape": {
+        "prev_close": 305.38,
+        "open": 385.09,
+        "high": 391.70,
+        "low": 378.20,
+        "close": 379.80,
+        "volume": 154000000,
+        "avg_vol_20d": 45300000
+      },
+      "metrics": {
+        "gap_pct": 26.1,
+        "day_pct": 24.4,
+        "close_in_range_pct": 47.0,
+        "rvol": 3.4,
+        "atr_multiple": null,
+        "x_daily_9ema": null
+      },
+      "follow_up": {
+        "t5_pct": 3.5,
+        "t20_pct": 7.0,
+        "max_dd_pct": -1.6,
+        "gap_filled_on_day": null,
+        "event_low_broken_on_day": null
+      },
+      "classification": "re-rating"
+    },
+    {
+      "ticker": "ORCL",
+      "event_date": "2025-09-10",
+      "catalyst": {
+        "type": "guidance_shock",
+        "headline": "Oracle reports $455B RPO / OpenAI backlog",
+        "time_et": "16:05",
+        "scheduled": true,
+        "permanence": true
+      },
+      "tape": {
+        "prev_close": 225.50,
+        "open": 298.11,
+        "high": 312.40,
+        "low": 290.10,
+        "close": 306.45,
+        "volume": 89000000,
+        "avg_vol_20d": 16800000
+      },
+      "metrics": {
+        "gap_pct": 32.2,
+        "day_pct": 35.9,
+        "close_in_range_pct": 48.0,
+        "rvol": 5.3,
+        "atr_multiple": null,
+        "x_daily_9ema": null
+      },
+      "follow_up": {
+        "t5_pct": -8.2,
+        "t20_pct": -12.1,
+        "max_dd_pct": -17.5,
+        "gap_filled_on_day": null,
+        "event_low_broken_on_day": null
+      },
+      "classification": "re-rating_that_faded"
+    },
+    {
+      "ticker": "AMD",
+      "event_date": "2025-10-06",
+      "catalyst": {
+        "type": "strategic_deal",
+        "headline": "AMD announces multi-year agreement with OpenAI for 6 gigawatt compute deal plus warrants",
+        "time_et": "07:00",
+        "scheduled": false,
+        "permanence": true
+      },
+      "tape": {
+        "prev_close": 164.68,
+        "open": 226.44,
+        "high": 226.71,
+        "low": 203.00,
+        "close": 203.71,
+        "volume": 156000000,
+        "avg_vol_20d": 30000000,
+        "entry_0930": 226.44
+      },
+      "metrics": {
+        "gap_pct": 37.5,
+        "day_pct": 23.7,
+        "close_in_range_pct": 3.0,
+        "rvol": 5.2,
+        "atr_multiple": null,
+        "x_daily_9ema": null
+      },
+      "follow_up": {
+        "t5_pct": 6.2,
+        "t20_pct": 27.5,
+        "max_dd_pct": 2.7,
+        "gap_filled_on_day": null,
+        "event_low_broken_on_day": null
+      },
+      "classification": "re-rating"
+    },
+    {
+      "ticker": "VKTX",
+      "event_date": "2024-02-27",
+      "catalyst": {
+        "type": "clinical_readout",
+        "headline": "Viking Therapeutics announces VK2735 Phase 2 obesity data; trial met the primary endpoint",
+        "time_et": "07:00",
+        "scheduled": false,
+        "permanence": true
+      },
+      "tape": {
+        "prev_close": 38.50,
+        "open": 69.80,
+        "high": 94.50,
+        "low": 62.10,
+        "close": 85.09,
+        "volume": 89500000,
+        "avg_vol_20d": 5000000
+      },
+      "metrics": {
+        "gap_pct": 81.3,
+        "day_pct": 121.0,
+        "close_in_range_pct": 85.0,
+        "rvol": 17.9,
+        "atr_multiple": null,
+        "x_daily_9ema": null
+      },
+      "follow_up": {
+        "t5_pct": 3.4,
+        "t20_pct": -5.0,
+        "max_dd_pct": -29.1,
+        "gap_filled_on_day": null,
+        "event_low_broken_on_day": null
+      },
+      "classification": "re-rating"
+    },
+    {
+      "ticker": "GME",
+      "event_date": "2024-05-14",
+      "catalyst": {
+        "type": "sentiment_squeeze",
+        "headline": "Roaring Kitty returns, GME surges on meme-stock posts",
+        "time_et": "06:30",
+        "scheduled": false,
+        "permanence": false
+      },
+      "tape": {
+        "prev_close": 16.99,
+        "open": 36.17,
+        "high": 48.75,
+        "low": 26.40,
+        "close": 27.20,
+        "volume": 206000000,
+        "avg_vol_20d": 12000000
+      },
+      "metrics": {
+        "gap_pct": 112.9,
+        "day_pct": 60.1,
+        "close_in_range_pct": 44.0,
+        "rvol": 17.2,
+        "atr_multiple": null,
+        "x_daily_9ema": null
+      },
+      "follow_up": {
+        "t5_pct": -54.6,
+        "t20_pct": -47.8,
+        "max_dd_pct": -63.7,
+        "gap_filled_on_day": 2,
+        "event_low_broken_on_day": 2
+      },
+      "classification": "pump"
+    }
+  ]
+}

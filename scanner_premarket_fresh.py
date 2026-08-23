@@ -110,6 +110,8 @@ class PremktMover:
     entry_note: str = ""
     exit_note: str = ""
     warning: str = ""          # behavioral guardrail notes
+    news_gate_tier: str = ""
+    news_gate_reason: str = ""
 
     @property
     def relative_pm_volume(self) -> float:
@@ -428,6 +430,61 @@ class PremktFreshScanner:
         mover.warning = " | ".join(warnings) if warnings else ""
         return mover
 
+    def _apply_catalyst_overlay(self, movers: List[PremktMover]) -> None:
+        """One-shot news resolve for ≥20% gaps. Confirmed catalyst → do not fade."""
+        min_gap = self.cfg.setup11.min_gap_pct
+        watch = [m for m in movers if m.gap_pct >= min_gap]
+        if not watch:
+            return
+        try:
+            from catalyst_news import feeds_from_config, load_cached_cik_map, resolve_watchlist_sync
+            from day1_catalyst_long import apply_news_overlay
+            from polygon_client import PolygonClient
+        except Exception as e:
+            logger.warning("catalyst overlay import failed: %s", e)
+            return
+
+        session = requests.Session()
+        session.headers.update({"User-Agent": "ChartSignl Setup Sniper admin@chartsignl.com"})
+        cik_map: Dict[str, str] = {}
+        try:
+            cik_map = load_cached_cik_map(session)
+        except Exception as e:
+            logger.warning("CIK map unavailable: %s", e)
+
+        polygon_client = None
+        try:
+            polygon_client = PolygonClient(self.cfg.api)
+        except Exception as e:
+            logger.warning("Massive news client unavailable: %s", e)
+
+        feeds = feeds_from_config(
+            self.cfg,
+            session=session,
+            polygon_client=polygon_client,
+            cik_map=cik_map or None,
+        )
+        if not feeds:
+            logger.info("  Catalyst overlay: no news feeds configured")
+            return
+
+        tickers = [m.ticker for m in watch]
+        logger.info("  Catalyst overlay: resolving %s", ",".join(tickers))
+        try:
+            results = resolve_watchlist_sync(
+                tickers, feeds, lookback_hours=self.cfg.setup11.lookback_hours,
+            )
+        except Exception as e:
+            logger.warning("catalyst resolve failed: %s", e)
+            return
+
+        for mover in watch:
+            gate = results.get(mover.ticker.upper())
+            if gate is None:
+                continue
+            apply_news_overlay(mover, gate)
+            logger.info("  %s news gate: %s — %s", mover.ticker, gate.tier, gate.reason)
+
     # ─── Step 4: Market bias (SPY + QQQ + UVXY) ───────────────────────
 
     def fetch_market_bias(self) -> Dict[str, Any]:
@@ -516,6 +573,11 @@ class PremktFreshScanner:
             except Exception as e:
                 logger.error(f"  Error enriching {mover.ticker}: {e}")
                 continue
+
+        try:
+            self._apply_catalyst_overlay(enriched)
+        except Exception as e:
+            logger.warning("catalyst overlay failed: %s", e)
 
         def priority_key(m: PremktMover) -> tuple:
             conf_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(m.confidence, 3)

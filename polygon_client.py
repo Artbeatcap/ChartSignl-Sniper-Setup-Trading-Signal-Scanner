@@ -187,7 +187,38 @@ class PolygonClient:
         except Exception:
             return None
 
-    # ─── Ticker Details ─────────────────────────────────────────────────
+    # ─── News (backstop) + ticker details ───────────────────────────────
+
+    def get_ticker_news(self, ticker: str, limit: int = 20) -> list[dict]:
+        """
+        GET /v2/reference/news — backstop only.
+
+        Measured ~6h lag on MRNA 2026-08-19; no published-at date filter on
+        this plan. Do not use this to clear Setup 11 before the open.
+        Returns dicts with title, published_utc, publisher (str), article_url.
+        """
+        try:
+            data = self._get(
+                "/v2/reference/news",
+                {"ticker": ticker, "limit": limit, "order": "desc"},
+            )
+        except Exception:
+            logger.warning("Ticker news failed for %s", ticker)
+            return []
+        out = []
+        for row in data.get("results") or []:
+            pub = row.get("publisher") or {}
+            if isinstance(pub, dict):
+                pub_name = pub.get("name") or "massive"
+            else:
+                pub_name = str(pub) if pub else "massive"
+            out.append({
+                "title": row.get("title") or "",
+                "published_utc": row.get("published_utc") or "",
+                "publisher": pub_name,
+                "article_url": row.get("article_url") or "",
+            })
+        return out
 
     def get_ticker_details(self, ticker: str) -> Optional[dict]:
         """

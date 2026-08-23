@@ -293,6 +293,43 @@ class CatalystConfig:
 
 
 @dataclass
+class AlpacaNewsConfig:
+    """Optional Alpaca news keys. Missing keys must not block ScannerConfig()."""
+
+    key_id: str = ""
+    secret_key: str = ""
+
+    def __post_init__(self):
+        self.key_id = (
+            self.key_id
+            or os.getenv("APCA_API_KEY_ID", "")
+            or os.getenv("ALPACA_API_KEY", "")
+        )
+        self.secret_key = (
+            self.secret_key
+            or os.getenv("APCA_API_SECRET_KEY", "")
+            or os.getenv("ALPACA_SECRET_KEY", "")
+        )
+
+    @property
+    def available(self) -> bool:
+        return bool(self.key_id and self.secret_key)
+
+
+@dataclass
+class Setup11Config:
+    """Setup 11: Day-1 Catalyst Gap Long — research-only until 20+ events."""
+
+    min_gap_pct: float = 20.0
+    min_rvol: float = 10.0
+    lookback_hours: int = 18
+    min_extension_pct: float = 3.0
+    ema_period: int = 9
+    decision_hour: int = 9
+    decision_minute: int = 45
+
+
+@dataclass
 class ScannerConfig:
     """Master config."""
     api: APIConfig = field(default_factory=APIConfig)
@@ -304,6 +341,8 @@ class ScannerConfig:
     fmp: FmpConfig = field(default_factory=FmpConfig)
     intraday: IntradayConfig = field(default_factory=IntradayConfig)
     catalyst: CatalystConfig = field(default_factory=CatalystConfig)
+    alpaca_news: AlpacaNewsConfig = field(default_factory=AlpacaNewsConfig)
+    setup11: Setup11Config = field(default_factory=Setup11Config)
     universe: UniverseConfig = field(default_factory=UniverseConfig)
     watchlist_file: str = ""
     earnings_watchlist_file: str = ""
