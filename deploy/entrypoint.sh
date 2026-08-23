@@ -15,6 +15,7 @@ if [ "$1" = "cron" ]; then
     echo "$(date) | Morning check: 8:00 AM + 8:30 fresh + 8:45 AM ET (Mon-Fri)"
     echo "$(date) | API Key: ${MASSIVE_API_KEY:0:6}...${MASSIVE_API_KEY: -4}"
     echo "$(date) | Discord: $([ -n "$DISCORD_WEBHOOK_URL" ] && echo 'configured' || echo 'not set')"
+    echo "$(date) | Alpaca news: $([ -n "$APCA_API_KEY_ID" ] && [ -n "$APCA_API_SECRET_KEY" ] && echo 'configured' || echo 'not set')"
 
     # After rebuild, root crontab is empty unless we load from the baked-in file.
     # Ensures rsync + docker-compose up --build is enough (no manual docker exec crontab).

@@ -206,7 +206,10 @@ class WireDetectionTests(unittest.TestCase):
         self.assertIn(editorial.catalyst_type, CONFIRMING)
         edgar = FakeFeed("edgar_8k", error=RuntimeError("SEC 503"))
         alpaca = FakeFeed("alpaca_news", items=[editorial])
-        resolver = CatalystResolver([alpaca, edgar])
+        resolver = CatalystResolver(
+            [alpaca, edgar],
+            now_fn=lambda: datetime(2026, 8, 19, 14, 0, tzinfo=timezone.utc),
+        )
         resolver.watch(["MRNA"])
         asyncio.run(resolver._tick())
         gate = resolver.result_for("MRNA")
@@ -218,7 +221,10 @@ class ResolverTests(unittest.TestCase):
     def test_dead_edgar_still_latches_mrna_from_wire(self):
         edgar = FakeFeed("edgar_8k", error=RuntimeError("HTTP 503"))
         wire = FakeFeed("wire_rss", items=[mrna_primary()])
-        resolver = CatalystResolver([edgar, wire])
+        resolver = CatalystResolver(
+            [edgar, wire],
+            now_fn=lambda: datetime(2026, 8, 19, 14, 0, tzinfo=timezone.utc),
+        )
         resolver.watch(["MRNA"])
         asyncio.run(resolver._tick())
         gate = resolver.result_for("MRNA")
@@ -321,7 +327,10 @@ class Setup11VerifiedCases(unittest.TestCase):
         )
         self.assertEqual(meme.catalyst_type, "sentiment_squeeze")
         feed = FakeFeed("alpaca_news", items=[meme])
-        resolver = CatalystResolver([feed])
+        resolver = CatalystResolver(
+            [feed],
+            now_fn=lambda: datetime(2026, 8, 19, 14, 0, tzinfo=timezone.utc),
+        )
         resolver.watch(["MRNA"])
         asyncio.run(resolver._tick())
         gate = resolver.result_for("MRNA")
@@ -349,7 +358,10 @@ class Setup11VerifiedCases(unittest.TestCase):
         )
         self.assertEqual(fool.catalyst_type, "unconfirmed")
         feed = FakeFeed("massive", items=[fool], is_primary=False)
-        resolver = CatalystResolver([feed])
+        resolver = CatalystResolver(
+            [feed],
+            now_fn=lambda: datetime(2026, 8, 19, 14, 0, tzinfo=timezone.utc),
+        )
         resolver.watch(["MRNA"])
         asyncio.run(resolver._tick())
         gate = resolver.result_for("MRNA")
@@ -406,9 +418,33 @@ class OverlayTests(unittest.TestCase):
         self.assertIn("rejected", mover.warning.lower())
 
     def test_alpaca_config_optional(self):
+        import os
+        from unittest.mock import patch
         from config import AlpacaNewsConfig
-        cfg = AlpacaNewsConfig(key_id="", secret_key="")
-        self.assertFalse(cfg.available)
+
+        with patch.dict(os.environ, {
+            "APCA_API_KEY_ID": "",
+            "APCA_API_SECRET_KEY": "",
+            "ALPACA_API_KEY": "",
+            "ALPACA_SECRET_KEY": "",
+        }, clear=False):
+            cfg = AlpacaNewsConfig()
+            self.assertFalse(cfg.available)
+
+    def test_alpaca_config_reads_env_aliases(self):
+        import os
+        from unittest.mock import patch
+        from config import AlpacaNewsConfig
+
+        with patch.dict(os.environ, {
+            "APCA_API_KEY_ID": "",
+            "APCA_API_SECRET_KEY": "",
+            "ALPACA_API_KEY": "paper-key",
+            "ALPACA_SECRET_KEY": "paper-secret",
+        }, clear=False):
+            cfg = AlpacaNewsConfig()
+            self.assertTrue(cfg.available)
+            self.assertEqual(cfg.key_id, "paper-key")
 
 
 class ConsolidatorIdTests(unittest.TestCase):

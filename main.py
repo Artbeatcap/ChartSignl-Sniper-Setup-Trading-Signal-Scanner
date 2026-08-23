@@ -424,6 +424,38 @@ def run_test(config: ScannerConfig):
     atr_14 = atr(test_highs, test_lows, test_closes, 14)
     logger.info(f"     ✓ EMA-9 last value: {ema_9[-1]:.2f}")
 
+    logger.info("  5. Testing Alpaca news entitlement...")
+    if not config.alpaca_news.available:
+        logger.info(
+            "     — APCA_API_KEY_ID / APCA_API_SECRET_KEY not set "
+            "(news gate will emit unconfirmed)"
+        )
+    else:
+        import requests
+
+        try:
+            resp = requests.get(
+                "https://data.alpaca.markets/v1beta1/news",
+                params={"limit": 1},
+                headers={
+                    "APCA-API-KEY-ID": config.alpaca_news.key_id,
+                    "APCA-API-SECRET-KEY": config.alpaca_news.secret_key,
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                logger.info("     ✓ Alpaca news REST authorized")
+            elif resp.status_code in (401, 403):
+                logger.error(
+                    "     ✗ Alpaca rejected this key for news (HTTP %s). "
+                    "Verify paper/live entitlement on the Alpaca dashboard.",
+                    resp.status_code,
+                )
+            else:
+                logger.warning("     ? Alpaca news HTTP %s", resp.status_code)
+        except Exception as e:
+            logger.warning("     ? Alpaca news probe failed: %s", e)
+
     logger.info("\n  All tests passed. You're good to go.\n")
 
 

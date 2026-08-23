@@ -21,3 +21,18 @@ cd /root/setup-sniper && docker-compose down && docker-compose up -d --build
 ```
 
 `.env` is not copied from dev machines; configure it on the server.
+
+Alpaca news (Setup 11 gate) uses the same file. Add these two lines next to `MASSIVE_API_KEY` — do not commit them:
+
+```
+APCA_API_KEY_ID=your_alpaca_key_id
+APCA_API_SECRET_KEY=your_alpaca_secret
+```
+
+Then rebuild or restart so cron inherits them (`printenv` → `/etc/environment` on container start):
+
+```bash
+cd /root/setup-sniper && docker compose up -d
+```
+
+`docker logs setup-sniper` should show `Alpaca news: configured`. Without the keys the scanner still boots; the news gate emits `unconfirmed`.

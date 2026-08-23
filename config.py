@@ -300,8 +300,16 @@ class AlpacaNewsConfig:
     secret_key: str = ""
 
     def __post_init__(self):
-        self.key_id = self.key_id or os.getenv("APCA_API_KEY_ID", "")
-        self.secret_key = self.secret_key or os.getenv("APCA_API_SECRET_KEY", "")
+        self.key_id = (
+            self.key_id
+            or os.getenv("APCA_API_KEY_ID", "")
+            or os.getenv("ALPACA_API_KEY", "")
+        )
+        self.secret_key = (
+            self.secret_key
+            or os.getenv("APCA_API_SECRET_KEY", "")
+            or os.getenv("ALPACA_SECRET_KEY", "")
+        )
 
     @property
     def available(self) -> bool:
