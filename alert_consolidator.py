@@ -23,6 +23,7 @@ _RB = {
     SetupId.ORL_VWAP_9EMA: None,
     SetupId.DEAD_CAT_BOUNCE: frozenset({MarketRegime.BEAR, MarketRegime.STRONG_BEAR, MarketRegime.PANIC}),
     SetupId.BLACK_SWAN_REVERSAL: frozenset({MarketRegime.PANIC, MarketRegime.STRONG_BEAR}),
+    SetupId.RIBBON_BREAK_SHORT: None,
 }
 _BEARS = frozenset({MarketRegime.BEAR, MarketRegime.STRONG_BEAR, MarketRegime.PANIC})
 
@@ -48,6 +49,8 @@ SETUP_NAME_TO_ID: dict[str, SetupId] = {
     "BLACK SWAN REVERSAL":                  SetupId.BLACK_SWAN_REVERSAL,
     "BLACK SWAN REVERSAL — LOAD THE BOAT":  SetupId.BLACK_SWAN_REVERSAL,
     "BLACK SWAN PANIC BUY":                 SetupId.BLACK_SWAN_REVERSAL,
+    "RIBBON BREAK SHORT":                   SetupId.RIBBON_BREAK_SHORT,
+    "RIBBON BREAK WATCH":                   SetupId.RIBBON_BREAK_SHORT,
 }
 
 
@@ -82,6 +85,8 @@ def _parse_setup_id(setup: str) -> Optional[SetupId]:
         (("CRASH REVERSAL",),   SetupId.VIX_CRASH_REVERSAL),
         (("BLACK SWAN",),       SetupId.BLACK_SWAN_REVERSAL),
         (("DEAD CAT",),         SetupId.DEAD_CAT_BOUNCE),
+        (("RIBBON BREAK",),     SetupId.RIBBON_BREAK_SHORT),
+        (("RIBBON",),           SetupId.RIBBON_BREAK_SHORT),
     ):
         if all(k in u for k in keys):
             return kid

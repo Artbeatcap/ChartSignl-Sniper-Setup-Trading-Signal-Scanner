@@ -100,3 +100,4 @@ Open `config.py` and verify:
 After this is running, the next two scanners plug into the same framework:
 - **Setup 3: Earnings Miss Short** (earnings calendar + PM 9 EMA check)
 - **Setup 7: Exhaustion Gap Short** (multi-day parabolic tracking)
+- **Setup 11: Ribbon Break Short** — `python main.py ribbon-watch` at 15:45 ET, then morning + intraday. Spec: `setup-11-daily-9ema-loss.md`.

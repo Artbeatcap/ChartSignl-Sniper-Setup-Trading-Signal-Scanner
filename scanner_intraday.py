@@ -34,6 +34,11 @@ from scanner_orl_vwap import OrlVwapScanner, IntradayAlert
 from scanner_vix import VixMonitor
 from scanner_dead_cat import DeadCatScanner
 from scanner_gap_reversal import GapReversalScanner
+from scanner_ribbon_break import (
+    RibbonBreakScanner,
+    filter_premarket_bars,
+    filter_rth_bars,
+)
 from alerts import AlertManager
 from catalyst_briefing import CatalystBriefing
 from universe_builder import UniverseBuilder
@@ -90,6 +95,9 @@ class IntradayEngine:
         # Phase 3 scanners
         self.dead_cat_scanner = DeadCatScanner(self.client)
         self.gap_reversal_scanner = GapReversalScanner(self.client)
+        self.ribbon_scanner = RibbonBreakScanner(config)
+        self._ribbon_primed: set[str] = set()
+        self._ribbon_bar_counts: dict[str, int] = {}
 
         # Session state
         self._session_date: Optional[str] = None
@@ -159,6 +167,12 @@ class IntradayEngine:
                             alerts_fired += 1
                     except Exception as e:
                         logger.error(f"Error processing {ticker}: {e}")
+
+                # 1b. Setup 11 Stage 3 — only Stage 2 qualified ribbon names
+                try:
+                    alerts_fired += self._process_ribbon_break(today, current_time)
+                except Exception as e:
+                    logger.error(f"Ribbon break Stage 3 error: {e}")
 
                 # 2. VIX monitor (Setups 1, 2, 10)
                 try:
@@ -273,6 +287,55 @@ class IntradayEngine:
                 alert = result  # Take the latest alert if multiple
 
         return alert
+
+    def _process_ribbon_break(self, today: str, current_time: str) -> int:
+        """
+        Stage 3 execution for Setup 11. Gated on Stage 2 watchlist.
+        Does not fire before 09:45 (opening range must complete).
+        Returns number of alerts dispatched.
+        """
+        if current_time < "09:45":
+            return 0
+        names = self.ribbon_scanner.stage2_qualified()
+        if not names:
+            return 0
+
+        fired = 0
+        for watch in names:
+            ticker = watch.ticker
+            try:
+                bars = self.client.get_intraday_bars(ticker, minutes=5, date=today)
+                if not bars:
+                    continue
+                if ticker not in self._ribbon_primed:
+                    self.ribbon_scanner.exec_engine.prime(watch, filter_premarket_bars(bars))
+                    self._ribbon_primed.add(ticker)
+                    self._ribbon_bar_counts[ticker] = 0
+
+                rth = filter_rth_bars(bars)
+                prev = self._ribbon_bar_counts.get(ticker, 0)
+                if len(rth) <= prev:
+                    continue
+                new_bars = rth[prev:]
+                self._ribbon_bar_counts[ticker] = len(rth)
+                alert = None
+                for bar in new_bars:
+                    result = self.ribbon_scanner.exec_engine.process_rth_bar(
+                        ticker=ticker,
+                        open_price=bar["o"],
+                        high=bar["h"],
+                        low=bar["l"],
+                        close=bar["c"],
+                        volume=bar["v"],
+                    )
+                    if result:
+                        alert = result
+                if alert:
+                    self._dispatch_intraday_alert(alert, current_time)
+                    fired += 1
+            except Exception as e:
+                logger.error(f"Ribbon Stage 3 error for {ticker}: {e}")
+        return fired
 
     def _filter_market_hours_bars(self, bars: list[dict]) -> list[dict]:
         """Filter bars to regular market hours (9:30-16:00 ET)."""
@@ -605,12 +668,16 @@ class IntradayEngine:
                 "watchlist.json",
                 "watchlist_earnings_miss.json",
                 "watchlist_exhaustion_gap.json",
+                "watchlist_ribbon_break.json",
             ]:
                 wl_path = Path(self.config.watchlist_file).parent / wl_file
                 if wl_path.exists():
                     try:
                         data = json.loads(wl_path.read_text())
-                        for c in data:
+                        rows = data
+                        if isinstance(data, dict):
+                            rows = data.get("runners") or data.get("names") or []
+                        for c in rows:
                             t = c.get("ticker", "")
                             if t and t not in tickers:
                                 tickers.append(t)
@@ -660,6 +727,9 @@ class IntradayEngine:
         # Phase 3
         self.dead_cat_scanner.reset_session()
         self.gap_reversal_scanner.reset_session()
+        self.ribbon_scanner.exec_engine.reset_session()
+        self._ribbon_primed.clear()
+        self._ribbon_bar_counts.clear()
 
     def _is_market_hours(self, current_time: str) -> bool:
         """Check if current time is within scan window."""

@@ -12,6 +12,7 @@ printenv | grep -v "no_proxy" > /etc/environment
 if [ "$1" = "cron" ]; then
     echo "$(date) | Setup Sniper starting in scheduled mode"
     echo "$(date) | Nightly scan: 4:35 PM ET (Mon-Fri)"
+    echo "$(date) | Ribbon watch (Setup 11): 3:45 PM ET (Mon-Fri)"
     echo "$(date) | Morning check: 8:00 AM + 8:30 fresh + 8:45 AM ET (Mon-Fri)"
     echo "$(date) | API Key: ${MASSIVE_API_KEY:0:6}...${MASSIVE_API_KEY: -4}"
     echo "$(date) | Discord: $([ -n "$DISCORD_WEBHOOK_URL" ] && echo 'configured' || echo 'not set')"
