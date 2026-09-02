@@ -175,6 +175,35 @@ class ExhaustionGapConfig:
 
 
 @dataclass
+class RibbonBreakConfig:
+    """
+    Setup 11: Extended name loses daily 9 EMA (ribbon-break short).
+
+    Daily 9 EMA is computed once on the Stage 1 bar and PERSISTED.
+    Stage 2/3 must read that stored value — never recompute it intraday.
+    """
+
+    min_extended_sessions: int = 4
+    min_extension_atr: float = 0.75
+    compress_atr: float = 0.25
+    min_score: int = 4
+    local_extension_override_atr: float = 1.0
+    grade_a_gap_pct: float = -0.005  # gap_pct <= this (e.g. -0.5%)
+    ema_period: int = 9
+    ema_65_period: int = 65
+    atr_period: int = 14
+    volume_lookback: int = 5
+    opening_range_bars: int = 3
+    slope_lookback: int = 3
+    daily_bars_lookback: int = 60
+    t1_atr_fraction: float = 0.50
+    t2_atr_fraction: float = 1.00
+    min_price: float = 1.0
+    max_price: float = 500.0
+    min_dollar_volume: float = 5_000_000
+
+
+@dataclass
 class AlertConfig:
     """Where and how to deliver alerts."""
     console_output: bool = True
@@ -305,9 +334,11 @@ class ScannerConfig:
     intraday: IntradayConfig = field(default_factory=IntradayConfig)
     catalyst: CatalystConfig = field(default_factory=CatalystConfig)
     universe: UniverseConfig = field(default_factory=UniverseConfig)
+    ribbon_break: RibbonBreakConfig = field(default_factory=RibbonBreakConfig)
     watchlist_file: str = ""
     earnings_watchlist_file: str = ""
     exhaustion_watchlist_file: str = ""
+    ribbon_watchlist_file: str = ""
     timezone: str = "US/Eastern"
 
     def __post_init__(self):
@@ -321,6 +352,8 @@ class ScannerConfig:
             self.earnings_watchlist_file = os.path.join(data_dir, "watchlist_earnings_miss.json")
         if not self.exhaustion_watchlist_file:
             self.exhaustion_watchlist_file = os.path.join(data_dir, "watchlist_exhaustion_gap.json")
+        if not self.ribbon_watchlist_file:
+            self.ribbon_watchlist_file = os.path.join(data_dir, "watchlist_ribbon_break.json")
 
         universe_size = int(os.getenv("UNIVERSE_SIZE", "500"))
         self.universe.top_n = universe_size

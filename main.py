@@ -5,6 +5,7 @@ Setup Sniper — Trading Scanner
 
 Usage:
   python main.py nightly         # Run after market close (4:30 PM ET+)
+  python main.py ribbon-watch    # Setup 11 Stage 1 — 15:45 ET proximity watch
   python main.py morning         # Run premarket (8:00 - 9:15 AM ET)
   python main.py morning-fresh   # 8:30 AM — premarket discovery (not on nightly list)
   python main.py intraday        # Run during market hours (9:25 AM - 4:05 PM ET)
@@ -33,6 +34,7 @@ from universe_builder import UniverseBuilder
 from scanner_runner_fade import RunnerFadeScanner
 from scanner_earnings_miss import EarningsMissScanner
 from scanner_exhaustion_gap import ExhaustionGapScanner
+from scanner_ribbon_break import RibbonBreakScanner
 from alerts import AlertManager
 from alert_consolidator import AlertConsolidator
 from catalyst_briefing import CatalystBriefing
@@ -84,6 +86,7 @@ BANNER = """
 ==================================================
               SETUP SNIPER
       Phase 1: Nightly + Morning Scans
+      Phase 1.5: Ribbon Break (Setup 11)
       Phase 2: Intraday + VIX Monitor
       "Bread and butter trades"
 =================================================="""
@@ -167,11 +170,60 @@ def run_nightly(config: ScannerConfig):
     if gap_candidates:
         alert_mgr.send_nightly_summary(gap_candidates)
 
+    # Setup 11: official-close refresh of the 15:45 proximity watch.
+    # Persist the close-updated 9 EMA; only alert names the 15:45 pass missed.
+    ribbon_scanner = RibbonBreakScanner(config)
+    already_watched = {w.ticker for w in ribbon_scanner.load_watchlist()}
+    ribbon_watches = ribbon_scanner.run_stage1()
+    fresh = [w for w in ribbon_watches if w.ticker not in already_watched]
+    if fresh:
+        alert_mgr.send_alerts_batch(ribbon_scanner.stage1_alerts(fresh))
+    elif ribbon_watches:
+        logger.info(
+            f"Setup 11: {len(ribbon_watches)} name(s) refreshed with official close "
+            f"(already watched at 15:45)."
+        )
+
     return {
         "runner_fade": runner_candidates,
         "earnings_miss": earnings_candidates,
         "exhaustion_gap": gap_candidates,
+        "ribbon_break": ribbon_watches,
     }
+
+
+def run_ribbon_watch(config: ScannerConfig):
+    """
+    Setup 11 Stage 1 — 15:45 ET proximity watch.
+    Persists daily 9 EMA so Stage 2 cannot recompute it.
+    """
+    briefing = None
+    if config.catalyst.available:
+        briefing = CatalystBriefing(
+            polygon_api_key=config.api.api_key,
+            fmp_api_key=config.fmp.api_key,
+            anthropic_api_key=config.catalyst.anthropic_api_key,
+            model=config.catalyst.model,
+        )
+    polygon_client = PolygonClient(config.api)
+    universe_builder = UniverseBuilder(polygon_client, config.universe)
+    universe_builder.build_universe(force=True)
+
+    alert_mgr = AlertManager(
+        config.alerts,
+        briefing=briefing,
+        universe_builder=universe_builder,
+        universe_top_n=config.universe.top_n,
+        consolidator=AlertConsolidator(universe_builder),
+    )
+    scanner = RibbonBreakScanner(config)
+    watches = scanner.run_stage1()
+    alerts = scanner.stage1_alerts(watches)
+    if alerts:
+        alert_mgr.send_alerts_batch(alerts)
+    else:
+        logger.info("Setup 11 Stage 1: no names compressing into the daily 9 EMA.")
+    return watches
 
 
 def run_regime(config: ScannerConfig) -> None:
@@ -223,6 +275,11 @@ def run_morning(config: ScannerConfig):
     gap_alerts = gap_scanner.run_morning_check()
     total_alerts.extend(gap_alerts)
 
+    # Setup 11 Stage 2 — uses persisted daily 9 EMA from Stage 1
+    ribbon_scanner = RibbonBreakScanner(config)
+    ribbon_alerts = ribbon_scanner.run_stage2()
+    total_alerts.extend(ribbon_alerts)
+
     alert_mgr.send_alerts_batch(total_alerts)
 
     if not total_alerts:
@@ -247,6 +304,7 @@ def _load_phase1_excluded_tickers(config: ScannerConfig) -> list[str]:
         config.watchlist_file,
         config.earnings_watchlist_file,
         config.exhaustion_watchlist_file,
+        config.ribbon_watchlist_file,
     ):
         if not os.path.exists(path):
             continue
@@ -258,6 +316,11 @@ def _load_phase1_excluded_tickers(config: ScannerConfig) -> list[str]:
             continue
         if isinstance(data, dict) and "runners" in data:
             for c in data.get("runners", []):
+                t = c.get("ticker")
+                if t:
+                    tickers.add(str(t).upper())
+        elif isinstance(data, dict) and "names" in data:
+            for c in data.get("names", []):
                 t = c.get("ticker")
                 if t:
                     tickers.add(str(t).upper())
@@ -392,6 +455,8 @@ def main():
 
     if command == "nightly":
         run_nightly(config)
+    elif command in ("ribbon-watch", "ribbon_watch", "ribbon"):
+        run_ribbon_watch(config)
     elif command == "morning":
         run_morning(config)
     elif command == "morning-fresh":
@@ -412,7 +477,8 @@ def main():
     else:
         print(f"Unknown command: {command}")
         print(
-            "Valid commands: nightly, morning, morning-fresh, intraday, regime, full, test"
+            "Valid commands: nightly, ribbon-watch, morning, morning-fresh, "
+            "intraday, regime, full, test"
         )
         sys.exit(1)
 

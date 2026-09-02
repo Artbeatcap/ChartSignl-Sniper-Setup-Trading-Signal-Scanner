@@ -71,6 +71,18 @@ def format_alert_console(alert) -> str:
             f"  PM High:         ${getattr(alert, 'pm_high', 0.0):.2f}",
             f"  PM Low:          ${getattr(alert, 'pm_low', 0.0):.2f}  {YELLOW}← break = entry{RESET}",
         ])
+    if "RIBBON" in getattr(alert, "setup", "").upper():
+        lines.extend([
+            f"  Daily 9 EMA:     ${getattr(alert, 'daily_ema9', getattr(alert, 'ema_9_current', 0.0)):.2f}  {DIM}(persisted — do not recompute){RESET}",
+        ])
+        if getattr(alert, "extended_sessions", 0):
+            lines.append(f"  Extended:        {alert.extended_sessions} sessions  score {getattr(alert, 'score', 0)}/6")
+        if getattr(alert, "grade", ""):
+            lines.append(f"  Grade:           {alert.grade}")
+        if getattr(alert, "pm_high", 0):
+            lines.append(f"  PM High (stop):  ${alert.pm_high:.2f}")
+        if getattr(alert, "pm_low", 0):
+            lines.append(f"  PM Low (trigger):${alert.pm_low:.2f}")
 
     if hasattr(alert, "pm_price"):
         lines.append(f"  Current (PM):    ${alert.pm_price:.2f}")
@@ -698,6 +710,10 @@ class AlertManager:
             "five_day_pct_change",
             "volume_ratio",
             "universe_context",
+            "daily_ema9",
+            "grade",
+            "score",
+            "extended_sessions",
         ]
         levels = {}
         for field in level_fields:

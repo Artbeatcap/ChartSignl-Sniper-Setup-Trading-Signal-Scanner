@@ -8,6 +8,9 @@ SHELL=/bin/bash
 # Regime classifier: 7:45 AM ET = 11:45 UTC (before 8:00 morning check)
 45 11 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py regime >> /app/logs/cron.log 2>&1
 
+# Setup 11 Stage 1 proximity watch: 3:45 PM ET = 19:45 UTC
+45 19 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py ribbon-watch >> /app/logs/cron.log 2>&1
+
 # Morning check pass 1: 8:00 AM ET = 12:00 UTC
 0 12 * * 1-5 . /etc/environment; cd /app && /usr/local/bin/python main.py morning >> /app/logs/cron.log 2>&1
 

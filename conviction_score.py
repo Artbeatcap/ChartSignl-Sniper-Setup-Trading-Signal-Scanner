@@ -44,6 +44,7 @@ class SetupId(Enum):
     ORL_VWAP_9EMA = 8
     DEAD_CAT_BOUNCE = 9
     BLACK_SWAN_REVERSAL = 10
+    RIBBON_BREAK_SHORT = 11
 
 
 @dataclass
