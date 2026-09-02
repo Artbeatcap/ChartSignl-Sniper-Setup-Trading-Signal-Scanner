@@ -591,7 +591,7 @@ class RibbonExecEngine:
                 return None
 
         stop = lv["stop"] if lv else structural_stop
-        target = lv["target"] if lv else (state.planned_t1 or raw_target)
+        target = lv["target"] if lv else raw_target
         stop_was_widened = lv["stop_was_widened"] if lv else False
         floor_source = lv["floor_source"] if lv else ""
 

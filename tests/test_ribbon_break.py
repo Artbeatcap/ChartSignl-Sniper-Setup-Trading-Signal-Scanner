@@ -205,6 +205,7 @@ class Stage3ExecutionTests(unittest.TestCase):
         self.assertLess(alert.ema_9, alert.vwap_level)
         self.assertEqual(alert.daily_ema9, self.watch.daily_ema9)
         self.assertTrue(alert.entry_price < alert.stop_price)
+        self.assertTrue(alert.target_1r < alert.entry_price, "short T1 must be below entry")
 
 
 class HelperTests(unittest.TestCase):
